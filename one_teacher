@@ -1,0 +1,16 @@
+"teachers":
+[{"id": 0,
+"name": "Morris Simmmons",
+"about": "Репетитор американского английского языка. Структурированная система обучения. Всем привет! Я предпочитаю называть себя «тренером» английского языка. Мои занятия похожи на тренировки",
+"rating": 4.2,
+"picture": "https://i.pravatar.cc/300?img=20",
+"price": 900,
+"goals": ["travel", "relocate", "study"],
+"free": {"mon":
+    {"8:00": false, "10:00": true, "12:00": true, "14:00": false, "16:00": false, "18:00": false, "20:00": false, "22:00": false},
+    "tue": {"8:00": true, "10:00": true, "12:00": false, "14:00": false, "16:00": false, "18:00": false, "20:00": false, "22:00": false},
+    "wed": {"8:00": true, "10:00": true, "12:00": false, "14:00": false, "16:00": false, "18:00": false, "20:00": false, "22:00": false},
+    "thu": {"8:00": true, "10:00": true, "12:00": false, "14:00": false, "16:00": false, "18:00": false, "20:00": false, "22:00": false},
+    "fri": {"8:00": true, "10:00": true, "12:00": false, "14:00": false, "16:00": false, "18:00": false, "20:00": false, "22:00": false},
+    "sat": {"8:00": false, "10:00": false, "12:00": false, "14:00": false, "16:00": true, "18:00": true, "20:00": true, "22:00": false},
+    "sun": {"8:00": false, "10:00": false, "12:00": false, "14:00": false, "16:00": true, "18:00": true, "20:00": true, "22:00": false}}}, 

@@ -1,7 +1,14 @@
+import os
+
 from flask import Flask, render_template, request, abort
 import json
 from flask_wtf.csrf import CSRFProtect
 from random import sample
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from sqlalchemy.dialects.postgresql import JSON
+
+
 
 DB = 'data.json'
 CLIENT_BOOKING_FILE = 'booking.json'
@@ -9,7 +16,64 @@ CLIENT_REQUEST_FILE = ' request.json'
 
 
 app = Flask(__name__)
-app.secret_key = "K7SrRxgSFVSnKMkO"
+# Настраиваем приложение
+app.config["DEBUG"] = True
+# - URL доступа к БД берем из переменной окружения DATABASE_URL
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Создаем подключение к БД
+db = SQLAlchemy(app)
+# Создаем объект поддержки миграций
+migrate = Migrate(app, db)
+
+
+class Teacher(db.Model):
+    __tablename__ = 'teachers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    about = db.Column(db.String, nullable=False)
+    rating = db.Column(db.Float, nullable=False)
+    picture  = db.Column(db.String, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    goals = db.relationship('Goal', back_populates='goals')
+    goals = db.relationship('Booking', back_populates='booking')
+
+    free = db.Column(JSON)
+
+
+class Goal(db.Model):
+    __tablename__ = 'goals'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    teacher = db.relationship('Teacher', back_populates='teachers')
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
+    client_goal = db.relationship('ClientRequest', back_populates='clients_request')
+
+
+
+class Booking(db.Model):
+    __tablename__ = 'booking'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String, nullable=False)
+    client_phone = db.Column(db.String, nullable=False)
+    client_dow = db.Column(db.String, nullable=False)
+    client_time = db.Column(db.String, nullable=False)
+    teacher = db.relationship('Teacher')
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
+
+
+class ClientRequest(db.Model):
+    __tablename__ = 'requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String, nullable=False)
+    client_phone = db.Column(db.String, nullable=False)
+    client_days = db.Column(db.String, nullable=False)
+    client_goal = db.relationship('Goal', back_populates='goal')
 
 
 @app.route('/')
