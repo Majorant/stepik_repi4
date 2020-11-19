@@ -1,0 +1,54 @@
+{% extends 'base.html'%}
+{% block container %}
+  <main class="container mt-3">
+  {%- set dow_names = { 'mon': 'Понедельник',
+                        'tue': 'Вторник',
+                        'wed': 'Среда',
+                        'thu': 'Четверг',
+                        'fri': 'Пятница',
+                        'sat': 'Суббота',
+                        'sun': 'Воскресенье',
+
+                    }
+  -%}
+    <div class="card my-4 mx-auto">
+      <div class="card-body m-2 m-md-4">
+        <article class="row">
+          <div class="col-5"><img src="{{ info.image_url }}" class="img-fluid" alt=""></div>
+          <div class="col-7">
+
+            <section class="teacher=info">
+
+              <h1 class="h2">{{ info.name }}</h1>
+              <p>
+                  {% for goal in info.goals %}
+                  <span class="badge badge-secondary mr-2">{{ goals[goal] }} </span>
+                  {% endfor %}
+                  Рейтинг: {{ info.rating }} Ставка: {{ info.price }} / час</p>
+              <p>{{ info.about }}</p>
+            </section>
+
+            <section class="available">
+              <h4 class="mb-4 mt-5">Записаться на пробный урок</h4>
+              {% for dow in schedule %}
+                <h6 class="mt-4">{{ dow_names[dow] }}</h6>
+                {% set ns = namespace(free_time_exist=false) %}
+                  {% for free_time in schedule[dow] %}
+                    {% if schedule[dow][free_time] %}
+                        <a href="/booking/{{ info.id }}/{{ dow }}/{{ free_time[:-3]}}" class="btn btn-outline-success mr-2">{{ free_time }} свободно</a>
+                        {% set ns.free_time_exist = true %}
+                    {% endif %}
+                  {% endfor %}
+                  {% if not ns.free_time_exist %}
+                      <p>Нет свободных уроков</p>
+                  {% endif %}
+              {% endfor %}
+            </section>
+
+          </div>
+        </article>
+      </div>
+
+    </div>
+  </main>
+{% endblock %}
