@@ -28,6 +28,13 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
+teachers_goals_association = db.Table(
+    'teachers_goals',
+    db.Column('teacher_id', db.Integer, db.ForeignKey('teachers.id')),
+    db.Column("goal_id", db.Integer, db.ForeignKey('goals.id')),
+)
+
+
 class Teacher(db.Model):
     __tablename__ = 'teachers'
 
@@ -37,21 +44,22 @@ class Teacher(db.Model):
     rating = db.Column(db.Float, nullable=False)
     picture  = db.Column(db.String, nullable=False)
     price = db.Column(db.Integer, nullable=False)
-    goals = db.relationship('Goal', back_populates='goals')
-    goals = db.relationship('Booking', back_populates='booking')
-
     free = db.Column(JSON)
+    goals = db.relationship('Goal', secondary=teachers_goals_association, back_populates='teachers')
+    # goals_booking = db.relationship('Booking', back_populates='teachers')
+
+    with open('data.json', 'r') as jf:
+        data = json.load(jf)
 
 
 class Goal(db.Model):
     __tablename__ = 'goals'
 
     id = db.Column(db.Integer, primary_key=True)
+    goal = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
-    teacher = db.relationship('Teacher', back_populates='teachers')
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
-    client_goal = db.relationship('ClientRequest', back_populates='clients_request')
-
+    teachers = db.relationship('Teacher', secondary=teachers_goals_association, back_populates='goals')
+    # client_goal = db.relationship('ClientRequest', back_populates='clients_request')
 
 
 class Booking(db.Model):
@@ -73,7 +81,7 @@ class ClientRequest(db.Model):
     client_name = db.Column(db.String, nullable=False)
     client_phone = db.Column(db.String, nullable=False)
     client_days = db.Column(db.String, nullable=False)
-    client_goal = db.relationship('Goal', back_populates='goal')
+    # client_goal = db.relationship('Goal', back_populates='goal')
 
 
 @app.route('/')
@@ -107,6 +115,9 @@ def all_teachers_view():
 
 @app.route('/goals/<goal>/')
 def goals(goal):
+    g = db.session.query(Goal).filter(Goal.goal == goal).first()
+    t = db.session.query(Teacher).filter(Teacher.goals in g)
+    print(t.first)
     with open(DB, 'r') as jf:
         data = json.load(jf)
 
@@ -124,26 +135,16 @@ def goals(goal):
 
 @app.route('/profiles/<id>/')
 def profiles(id):
-    profile_info = dict()
-    schedule = dict()
-
-    with open(DB, 'r') as jf:
-        data = json.load(jf)
-
-    for teacher in data['teachers']:
-        if teacher['id'] == int(id):
-            profile_info = {'id': id,
-                            'name' : teacher['name'],
-                            'goals' : teacher['goals'],
-                            'rating' : teacher['rating'],
-                            'price' : teacher['price'],
-                            'about' : teacher['about'],
-                            'image_url' : teacher['picture'],
-            }
-            schedule = teacher['free']
-            break
-
-    return render_template('profile.html', info=profile_info, schedule=schedule, goals=data['goals'])
+    teacher = db.session.query(Teacher).get_or_404(id)
+    profile_info = {'id': str(id),
+                    'name' : teacher.name,
+                    'goals' : [goal.name for goal in teacher.goals],
+                    'rating' : teacher.rating,
+                    'price' : teacher.price,
+                    'about' : teacher.about,
+                    'image_url' : teacher.picture,
+    }
+    return render_template('profile.html', info=profile_info, schedule=json.loads(teacher.free), goals=[])
 
 
 @app.route('/request/', methods=['GET'])
@@ -239,7 +240,7 @@ def booking_done():
 
 @app.errorhandler(500)
 def render_server_error(error):
-    return "Что-то не так, но мы все починим", 500
+    return "Что-то не так, но мы все починим. Error 500", 500
 
 
 @app.errorhandler(404)

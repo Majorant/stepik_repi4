@@ -22,7 +22,7 @@
               <h1 class="h2">{{ info.name }}</h1>
               <p>
                   {% for goal in info.goals %}
-                  <span class="badge badge-secondary mr-2">{{ goals[goal] }} </span>
+                  <span class="badge badge-secondary mr-2">{{ goal }} </span>
                   {% endfor %}
                   Рейтинг: {{ info.rating }} Ставка: {{ info.price }} / час</p>
               <p>{{ info.about }}</p>
