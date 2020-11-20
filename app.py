@@ -92,6 +92,9 @@ def index():
     if request.endpoint == 'index' or request.endpoint == '/':
         samples=sample(range(0,len(data['teachers'])), 6)
 
+    t = db.session.query(Teacher).order_by(func.random()).limit(6)
+    print(t)
+
 
     return render_template('index.html',
                             samples=samples,
@@ -115,22 +118,22 @@ def all_teachers_view():
 
 @app.route('/goals/<goal>/')
 def goals(goal):
-    g = db.session.query(Goal).filter(Goal.goal == goal).first()
-    t = db.session.query(Teacher).filter(Teacher.goals in g)
-    print(t.first)
-    with open(DB, 'r') as jf:
-        data = json.load(jf)
+    q_goal = db.session.query(Goal).filter(Goal.goal == goal).scalar()
 
-    try:
-        t_goal = data['goals'][goal]
-    except KeyError as e:
+    if q_goal:
+        teachers = list()
+        for teacher in q_goal.teachers:
+            teachers.append({'id': teacher.id,
+                            'name': teacher.name,
+                            'rating' : teacher.rating,
+                            'price' : teacher.price,
+                            'about' : teacher.about,
+                            'image_url' : teacher.picture,
+            })
+    else:
         abort(404)
 
-    teachers = list()
-    for teacher in data['teachers']:
-        if goal in teacher['goals']:
-            teachers.append(teacher)
-    return render_template('goal.html', teachers=teachers, t_goal=t_goal, goal_pic=data['goals_pic'][goal])
+    return render_template('goal.html', teachers=teachers, t_goal=q_goal.name)
 
 
 @app.route('/profiles/<id>/')
@@ -144,7 +147,7 @@ def profiles(id):
                     'about' : teacher.about,
                     'image_url' : teacher.picture,
     }
-    return render_template('profile.html', info=profile_info, schedule=json.loads(teacher.free), goals=[])
+    return render_template('profile.html', info=profile_info, schedule=json.loads(teacher.free))
 
 
 @app.route('/request/', methods=['GET'])
@@ -246,7 +249,7 @@ def render_server_error(error):
 @app.errorhandler(404)
 def render_server_error(error):
     print(error)
-    return "Что-то не так, но мы все починим:\n\n{}".format(error), 404
+    return "Что-то не так, но мы все починим:\n\r{}".format(error), 404
 
 
 if __name__ == 'main':
