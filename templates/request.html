@@ -2,7 +2,7 @@
 {% block container %}
   <main class="container mt-5">
     <div class="col-12 col-sm-10 col-lg-6 offset-lg-3 offset-sm-1">
-      <form action="{{ url_for('request_done_view') }}" class="card mb-5" method="post">
+      <form action="{{ url_for('request_view') }}" class="card mb-5" method="post">
         <div class="card-body text-center pt-5">
           <h1 class="h3 card-title mt-4 mb-2">Подбор преподавателя</h1>
           <p class="px-5">Напишите, чего вам нужно и&nbsp;мы&nbsp;подберем отличных&nbsp;ребят</p>
@@ -17,9 +17,9 @@
               {% for goal in goals %}
               {% set ns.count = ns.count + 1 %}
               <div class="form-check ">
-                <input type="radio" class="form-check-input" name="goal" value="{{ goal }}" id="goal{{ ns.count }}" {% if ns.count == 1 %}checked{% endif %}>
+                <input type="radio" class="form-check-input" name="goal_id" value="{{ goal.id }}" id="{{ goal.id }}" {% if ns.count == 1 %}checked{% endif %}>
                 <label class="form-check-label" for="goal{{ count }}">
-                  {{ goals[goal] }}
+                  {{ goal.name }}
                 </label>
               </div>
               {% endfor %}
@@ -56,10 +56,11 @@
         </div>
         <hr>
         <div class="card-body mx-3">
-          <label class="mb-1 mt-2" for="clientName">Вас зовут</label>
-          <input class="form-control" type="text" name="clientName" id="clientName">
-          <label class="mb-1 mt-2" for="clientPhone">Ваш телефон</label>
-          <input class="form-control" type="tel"  name="clientPhone" id="clientPhone">
+            {{ form.csrf_token }}         <!-- вывод токена CSFR -->
+            {{ form.client_name.label(class="mb-1 mt-2") }}         <!-- вывод метку поля формы -->
+            {{ form.client_name(class="form-control") }}               <!-- вывод HTML-тега формы -->
+            {{ form.client_phone.label(class="mb-1 mt-2") }}         <!-- вывод метку поля формы -->
+            {{ form.client_phone(class="form-control") }}               <!-- вывод HTML-тега формы -->
           <input type="submit" class="btn btn-primary mt-4 mb-2" value="Найдите мне преподавателя">
         </div>
       </form>

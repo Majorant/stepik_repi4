@@ -6,23 +6,43 @@
     <div class="text-center mb-5">
       <div class="btn-group mx-auto mb-0" role="group" aria-label="Basic example">
           {% for goal in goals %}
-              <a href="/goals/{{ goal }}/" class="btn btn-outline-secondary">{{ goals_pic[goal] }} {{ goals[goal] }}</a>
+              <a href="/goals/{{ goal.goal }}/" class="btn btn-outline-secondary"> &#{{ goal.picture }}; {{ goal.name }}</a>
           {% endfor %}
       </div>
     </div>
+
     <h2 class="h5 text-center mb-5">Наши преподаватели</h2>
+
     <div class="row">
       <div class="col-12 col-lg-10 offset-lg-1 m-auto">
-      {% for id in samples %}
+          {% if all_teachers %}
+          <div class="btn-group dropup">
+              <a class="btn btn-secondary btn-sm dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Упорядочить по
+              </a>
+
+              <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                  <a class="dropdown-item" href="/all_teachers/rating_desc/">убыванию рейтиинга</a>
+                  <a class="dropdown-item" href="/all_teachers/rating/">возрастанию рейтиинга</a>
+                  <a class="dropdown-item" href="/all_teachers/price/">возрастанию стоимости</a>
+                  <a class="dropdown-item" href="/all_teachers/price_desc/">убыванию стоимости</a>
+              </div>
+          </div>
+          {% endif %}
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 col-lg-10 offset-lg-1 m-auto">
+      {% for teacher in teachers %}
       <div class="card mb-4">
         <div class="card-body">
           <div class="row">
-            <div class="col-3"><img src="{{ teachers[id].picture }}" class="img-fluid" alt=""></div>
+            <div class="col-3"><img src="{{ teacher.picture }}" class="img-fluid" alt=""></div>
             <div class="col-9">
-              <p class="float-right">Рейтинг: {{ teachers[id].rating }} Ставка: {{ teachers[id].price }} / час</p>
-              <h2 class="h4">{{ teachers[id].name }}</h2>
-              <p>{{ teachers[id].about }}</p>
-              <a href="/profiles/{{ id }}/" class="btn btn-outline-primary btn-sm mr-3 mb-2">Показать информаци и расписание</a>
+              <p class="float-right">Рейтинг: {{ teacher.rating }} Ставка: {{ teacher.price }} / час</p>
+              <h2 class="h4">{{ teacher.name }}</h2>
+              <p>{{ teacher.about }}</p>
+              <a href="/profiles/{{ teacher.id }}/" class="btn btn-outline-primary btn-sm mr-3 mb-2">Показать информаци и расписание</a>
 
             </div>
           </div>

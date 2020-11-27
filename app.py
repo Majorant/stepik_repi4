@@ -1,18 +1,14 @@
 import os
+import json
 
 from flask import Flask, render_template, request, abort
-import json
-from flask_wtf.csrf import CSRFProtect
-from random import sample
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.dialects.postgresql import JSON
-
-
-
-DB = 'data.json'
-CLIENT_BOOKING_FILE = 'booking.json'
-CLIENT_REQUEST_FILE = ' request.json'
+from sqlalchemy.sql.expression import func
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField, SubmitField
+from wtforms.validators import InputRequired
 
 
 app = Flask(__name__)
@@ -21,6 +17,7 @@ app.config["DEBUG"] = True
 # - URL доступа к БД берем из переменной окружения DATABASE_URL
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.secret_key = os.environ.get("CSRF_KEY")
 
 # Создаем подключение к БД
 db = SQLAlchemy(app)
@@ -46,10 +43,6 @@ class Teacher(db.Model):
     price = db.Column(db.Integer, nullable=False)
     free = db.Column(JSON)
     goals = db.relationship('Goal', secondary=teachers_goals_association, back_populates='teachers')
-    # goals_booking = db.relationship('Booking', back_populates='teachers')
-
-    with open('data.json', 'r') as jf:
-        data = json.load(jf)
 
 
 class Goal(db.Model):
@@ -58,8 +51,9 @@ class Goal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     goal = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
+    picture = db.Column(db.Integer, nullable=False)
     teachers = db.relationship('Teacher', secondary=teachers_goals_association, back_populates='goals')
-    # client_goal = db.relationship('ClientRequest', back_populates='clients_request')
+    client_goal = db.relationship('ClientRequest')
 
 
 class Booking(db.Model):
@@ -68,8 +62,8 @@ class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_name = db.Column(db.String, nullable=False)
     client_phone = db.Column(db.String, nullable=False)
-    client_dow = db.Column(db.String, nullable=False)
-    client_time = db.Column(db.String, nullable=False)
+    dow = db.Column(db.String, nullable=False)
+    time = db.Column(db.String, nullable=False)
     teacher = db.relationship('Teacher')
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
 
@@ -81,164 +75,103 @@ class ClientRequest(db.Model):
     client_name = db.Column(db.String, nullable=False)
     client_phone = db.Column(db.String, nullable=False)
     client_days = db.Column(db.String, nullable=False)
-    # client_goal = db.relationship('Goal', back_populates='goal')
+    goal_id = db.Column(db.Integer,db.ForeignKey('goals.id'))
+    request_goal = db.relationship('Goal')
+
+
+class clientForm(FlaskForm):
+    client_name = StringField('Вас зовут', [InputRequired()])
+    client_phone = StringField('Ваш телефон', [InputRequired()])
 
 
 @app.route('/')
 def index():
-    with open(DB, 'r') as jf:
-        data = json.load(jf)
-    samples = list()
-    if request.endpoint == 'index' or request.endpoint == '/':
-        samples=sample(range(0,len(data['teachers'])), 6)
-
-    t = db.session.query(Teacher).order_by(func.random()).limit(6)
-    print(t)
-
-
+    teachers = db.session.query(Teacher).order_by(func.random()).limit(6).all()
+    goals = db.session.query(Goal).all()
     return render_template('index.html',
-                            samples=samples,
-                            goals=data['goals'],
-                            teachers=data['teachers'],
-                            goals_pic=data['goals_pic'],
+                            teachers=teachers,
+                            goals=goals,
                             )
 
 
 @app.route('/all_teachers/')
-def all_teachers_view():
-    with open(DB, 'r') as jf:
-        data = json.load(jf)
+@app.route('/all_teachers/<sort>/')
+def all_teachers_view(sort=None):
+    if sort is None:
+        teachers = db.session.query(Teacher).order_by(func.random()).all()
+    elif sort == 'rating':
+        teachers = db.session.query(Teacher).order_by(Teacher.rating).all()
+    elif sort == 'rating_desc':
+        teachers = db.session.query(Teacher).order_by(Teacher.rating.desc()).all()
+    elif sort == 'price':
+        teachers = db.session.query(Teacher).order_by(Teacher.price).all()
+    elif sort == 'price_desc':
+        teachers = db.session.query(Teacher).order_by(Teacher.price.desc()).all()
+    else:
+        teachers = db.session.query(Teacher).order_by(func.random()).all()
+
+    goals = db.session.query(Goal).all()
     return render_template('index.html',
-                            samples=range(len(data['teachers'])),
-                            goals=data['goals'],
-                            teachers=data['teachers'],
-                            goals_pic=data['goals_pic'],
+                            teachers=teachers,
+                            goals=goals,
+                            all_teachers=True,
                             )
 
 
 @app.route('/goals/<goal>/')
 def goals(goal):
     q_goal = db.session.query(Goal).filter(Goal.goal == goal).scalar()
-
-    if q_goal:
-        teachers = list()
-        for teacher in q_goal.teachers:
-            teachers.append({'id': teacher.id,
-                            'name': teacher.name,
-                            'rating' : teacher.rating,
-                            'price' : teacher.price,
-                            'about' : teacher.about,
-                            'image_url' : teacher.picture,
-            })
-    else:
-        abort(404)
-
-    return render_template('goal.html', teachers=teachers, t_goal=q_goal.name)
+    return render_template('goal.html', teachers=q_goal.teachers, t_goal=q_goal.name)
 
 
 @app.route('/profiles/<id>/')
 def profiles(id):
-    teacher = db.session.query(Teacher).get_or_404(id)
-    profile_info = {'id': str(id),
-                    'name' : teacher.name,
-                    'goals' : [goal.name for goal in teacher.goals],
-                    'rating' : teacher.rating,
-                    'price' : teacher.price,
-                    'about' : teacher.about,
-                    'image_url' : teacher.picture,
-    }
-    return render_template('profile.html', info=profile_info, schedule=json.loads(teacher.free))
+    teacher=db.session.query(Teacher).get_or_404(id)
+    return render_template('profile.html',
+                            teacher=teacher,
+                            schedule=json.loads(teacher.free))
 
 
-@app.route('/request/', methods=['GET'])
+@app.route('/request/', methods=['GET', 'POST'])
 def request_view():
-    with open(DB, 'r') as jf:
-        goals = json.load(jf)['goals']
-    return render_template('request.html', goals=goals)
+    if request.method == 'POST':
+        client_goal = db.session.query(Goal).get_or_404(request.form.get('goal_id'))
+
+        client_request = ClientRequest(client_name=request.form.get('client_name'),
+                                        client_phone=request.form.get('client_phone'),
+                                        client_days=request.form.get('time'),
+                                        goal_id=client_goal.id,
+                                        )
+        db.session.add(client_request)
+        db.session.commit()
+        return render_template('request_done.html',
+                                client_request=client_request,
+                                goal_name=client_goal.name,
+                                )
+    else:
+        form = clientForm()
+        return render_template('request.html',
+                                form=form,
+                                goals=db.session.query(Goal).all(),
+                                )
 
 
-@app.route('/request_done/', methods=['POST'])
-def request_done_view():
-    client_name=request.form.get('clientName')
-    client_phone=request.form.get('clientPhone')
-    client_time=request.form.get('time')
-    client_goal=request.form.get('goal')
-
-    with open(DB, 'r') as jf:
-        goals = json.load(jf)['goals']
-
-    try:
-        with open(CLIENT_REQUEST_FILE, "r") as jf:
-            client_requests = json.load(jf) or []
-    except FileNotFoundError:
-        client_requests = []
-
-    client_requests.append({'client_name': client_name,
-                            'client_phone': client_phone,
-                            'client_time': client_time,
-                            'client_goal': client_goal,
-        })
-
-    with open(CLIENT_REQUEST_FILE, 'w') as jf:
-        json.dump(client_requests, jf, ensure_ascii=False)
-
-    return render_template('request_done.html',
-                            client_name=client_name,
-                            client_phone=client_phone,
-                            client_time=client_time,
-                            client_goal=client_goal,
-                            goals=goals,
-                            )
-
-
-@app.route('/booking/<id>/<dow>/<time>')
+@app.route('/booking/<id>/<dow>/<time>', methods=['GET', 'POST'])
 def booking(id, dow, time):
-    profile_info = dict()
-    schedule = dict()
-
-    with open(DB, 'r') as jf:
-        data = json.load(jf)
-
-    for teacher in data['teachers']:
-        if teacher['id'] == int(id):
-            profile_info = {'id': id,
-                            'name' : teacher['name'],
-                            'image_url' : teacher['picture'],
-            }
-            break
-    t_time = time + ':00'
-    return render_template('booking.html', info=profile_info, dow=dow, time=t_time)
-
-
-@app.route('/booking_done/', methods=["POST"])
-def booking_done():
-    teacher_id=request.form.get('clientTeacher')
-    client_name=request.form.get('clientName')
-    client_phone=request.form.get('clientPhone')
-    client_dow=request.form.get('clientWeekday')
-    client_time=request.form.get('clientTime')
-
-    try:
-        with open(CLIENT_BOOKING_FILE, "r") as jf:
-            client_requests = json.load(jf) or []
-    except FileNotFoundError:
-        client_requests = []
-
-    client_requests.append({'teacher': teacher_id,
-                            'client_name': client_name,
-                            'client_phone': client_phone,
-                            'client_dow': client_dow,
-                            'client_time': client_time,
-        })
-    with open(CLIENT_BOOKING_FILE, 'w') as jf:
-        json.dump(client_requests, jf, ensure_ascii=False)
-
-    return render_template('booking_done.html',
-                            client_name=request.form.get('clientName'),
-                            client_phone=request.form.get('clientPhone'),
-                            client_dow=request.form.get('clientWeekday'),
-                            client_time=request.form.get('clientTime'),
+    if request.method == 'POST':
+        booking = Booking(client_name=request.form.get('client_name'),
+                            client_phone=request.form.get('client_phone'),
+                            dow=request.form.get('dow'),
+                            time=request.form.get('time'),
+                            teacher_id=request.form.get('teacher_id'),
                             )
+        db.session.add(booking)
+        db.session.commit()
+        return render_template('booking_done.html', booking=booking)
+    else:
+        form = clientForm()
+        teacher = db.session.query(Teacher).get_or_404(id)
+        return render_template('booking.html', teacher=teacher, dow=dow, time=time, form=form)
 
 
 @app.errorhandler(500)

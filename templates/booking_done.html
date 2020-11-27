@@ -1,6 +1,16 @@
 {% extends 'base.html'%}
 {% block container %}
   <main class="container mt-3">
+  {%- set dow_names = { 'mon': 'Понедельник',
+                        'tue': 'Вторник',
+                        'wed': 'Среда',
+                        'thu': 'Четверг',
+                        'fri': 'Пятница',
+                        'sat': 'Суббота',
+                        'sun': 'Воскресенье',
+
+                    }
+  -%}
     <!-- HERO -->
     <div class="row mt-5">
       <div class="col-10 col-md-6 offset-1 offset-md-3">
@@ -13,9 +23,9 @@
           <hr />
           <div class="card-body mx-5">
             <p><b>Тема:</b> Пробный урок</p>
-            <p><b>Дата:</b> {{ client_dow }}, {{ client_time }}</p>
-            <p><b>Имя:</b> {{ client_name }}</p>
-            <p><b>Телефон:</b> {{ client_phone }}</p>
+            <p><b>Дата:</b> {{ dow_names[booking.dow] }}, {{ booking.time }}:00</p>
+            <p><b>Имя:</b> {{ booking.client_name }}</p>
+            <p><b>Телефон:</b> {{ booking.client_phone }}</p>
           </div>
         </div>
       </div>

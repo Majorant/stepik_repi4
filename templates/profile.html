@@ -14,18 +14,18 @@
     <div class="card my-4 mx-auto">
       <div class="card-body m-2 m-md-4">
         <article class="row">
-          <div class="col-5"><img src="{{ info.image_url }}" class="img-fluid" alt=""></div>
+          <div class="col-5"><img src="{{ teacher.picture }}" class="img-fluid" alt=""></div>
           <div class="col-7">
 
             <section class="teacher=info">
 
-              <h1 class="h2">{{ info.name }}</h1>
+              <h1 class="h2">{{ teacher.name }}</h1>
               <p>
-                  {% for goal in info.goals %}
-                  <span class="badge badge-secondary mr-2">{{ goal }} </span>
+                  {% for goal in teacher.goals %}
+                  <span class="badge badge-secondary mr-2">{{ goal['name'] }} </span>
                   {% endfor %}
-                  Рейтинг: {{ info.rating }} Ставка: {{ info.price }} / час</p>
-              <p>{{ info.about }}</p>
+                  Рейтинг: {{ teacher.rating }} Ставка: {{ teacher.price }} / час</p>
+              <p>{{ teacher.about }}</p>
             </section>
 
             <section class="available">
@@ -35,7 +35,7 @@
                 {% set ns = namespace(free_time_exist=false) %}
                   {% for free_time in schedule[dow] %}
                     {% if schedule[dow][free_time] %}
-                        <a href="/booking/{{ info.id }}/{{ dow }}/{{ free_time[:-3]}}" class="btn btn-outline-success mr-2">{{ free_time }} свободно</a>
+                        <a href="/booking/{{ teacher.id }}/{{ dow }}/{{ free_time[:-3]}}" class="btn btn-outline-success mr-2">{{ free_time }} свободно</a>
                         {% set ns.free_time_exist = true %}
                     {% endif %}
                   {% endfor %}
